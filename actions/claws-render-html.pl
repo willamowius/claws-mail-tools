@@ -11,6 +11,8 @@ use strict;
 use warnings;
 use Email::MIME;
 use File::Temp qw(tempfile);
+use Encode;
+use Encode::Guess;
 
 # ======== some config here: ===========
 
@@ -43,19 +45,23 @@ my $content_type = $parsed->content_type;
 # collect header lines according to configured @headlist
 my @hl_str = ();
 foreach my $headitem (@headlist) {
-	my @headtxl = $parsed->header($headitem) ;
+	my @headtxl = $parsed->header($headitem);
 	foreach my $htlitem (@headtxl) {
-		push @hl_str , sprintf ("%s: %s", $headitem, $htlitem) ;
+		my $dec = Encode::Guess->guess($htlitem);
+		if (ref $dec) {
+			Encode::from_to($htlitem, "iso-8859-1", "utf8");
+		}
+		push @hl_str, sprintf ("%s: %s", $headitem, $htlitem);
 	}
 }
 
 # produce some basic html
-my $htmlheadstr  = "<hr><br><font size='3'><b>";
+my $htmlheadstr  = "<html><head><meta charset='utf-8'></head><body><hr><br><font size='3'><b>";
 my $headerline; 
 
 # with the header lines 
 foreach $headerline (@hl_str) {
-  $htmlheadstr .= $headerline ;
+  $htmlheadstr .= $headerline;
   $htmlheadstr .= "<br>\n";
 }
 
@@ -83,7 +89,11 @@ sub find_html_part {
 	foreach my $part ($obj->subparts) {
 		my $ct = $part->content_type;
 		if ($ct =~ /^text\/html/) {
-			# TODO: parse charset= if present and recode ?
+			# parse charset= if present and convert if its not UTF-8
+			if ($ct =~ /charset=(.*)/) {
+				my $charset = $1;
+				Encode::from_to($part->body, $charset, "utf8") if ($charset ne 'utf-8');
+			}
 			return $part->body;
 		}
 		my $b = find_html_part($part) if ($ct =~ /^multipart/);

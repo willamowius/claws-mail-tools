@@ -91,8 +91,10 @@ sub find_html_part {
 		if ($ct =~ /^text\/html/) {
 			# parse charset= if present and convert if its not UTF-8
 			if ($ct =~ /charset=(.*)/) {
-				my $charset = $1;
-				Encode::from_to($part->body, $charset, "utf8") if ($charset ne 'utf-8');
+				my $charset = lc($1);
+				my $b = $part->body;
+				Encode::from_to($b, $charset, "utf8") if ($charset ne 'utf-8');
+				return $b;
 			}
 			return $part->body;
 		}

@@ -92,6 +92,7 @@ sub find_html_part {
 			# parse charset= if present and convert if its not UTF-8
 			if ($ct =~ /charset=(.*)/) {
 				my $charset = lc($1);
+				$charset =~ s/["']//g; # remove quotes
 				my $b = $part->body;
 				Encode::from_to($b, $charset, "utf8") if ($charset ne 'utf-8');
 				return $b;

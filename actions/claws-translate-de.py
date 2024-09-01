@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/bin/env python3
 import sys
 # https://github.com/ssut/py-googletrans "pip install googletrans==3.1.0a0"
 from googletrans import Translator

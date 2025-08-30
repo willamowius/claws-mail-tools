@@ -9,6 +9,7 @@
 
 use strict;
 use warnings;
+use utf8;
 use Email::MIME;
 use File::Temp qw(tempfile);
 use Encode;
@@ -47,9 +48,15 @@ my @hl_str = ();
 foreach my $headitem (@headlist) {
 	my @headtxl = $parsed->header($headitem);
 	foreach my $htlitem (@headtxl) {
+		Encode::Guess->add_suspects(qw/iso-8859-1 iso-8859-2/);
 		my $dec = Encode::Guess->guess($htlitem);
-		if (ref $dec) {
-			Encode::from_to($htlitem, "iso-8859-1", "utf8");
+		eval {
+			if (ref $dec && $dec->name ne 'utf8') {
+				$htlitem = $dec->decode($htlitem);
+			}
+		};
+		if ($@) {
+			print "$@\n";
 		}
 		push @hl_str, sprintf ("%s: %s", $headitem, $htlitem);
 	}
@@ -77,7 +84,7 @@ my (undef, $tmp_pdf) = tempfile(UNLINK => 0, SUFFIX => '.pdf'); # put PDF in tem
 
 # pipe the stuff through converter
 open(PDFPIPE, "| $wh2p - $tmp_pdf 2> /dev/null") or die "Couldn't fork: $!\n";
-
+binmode PDFPIPE, ":encoding(UTF-8)";
 print PDFPIPE $htmlheadstr . $body;
 close(PDFPIPE);
 
@@ -94,7 +101,8 @@ sub find_html_part {
 				my $charset = lc($1);
 				$charset =~ s/["']//g; # remove quotes
 				my $b = $part->body;
-				Encode::from_to($b, $charset, "utf8") if ($charset ne 'utf-8');
+				Encode::from_to($b, $charset, "utf8") if ($charset ne 'utf-8' && $charset ne 'utf8');
+				Encode::_utf8_on($b); # now it's utf8, regardless what it was before
 				return $b;
 			}
 			return $part->body;

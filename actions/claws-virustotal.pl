@@ -29,7 +29,7 @@ sub find_application_part {
 	my $result = 0;
 	foreach my $part ($obj->subparts) {
 		my $type = $part->content_type;
-		if ($type =~ /^application\//) {
+		if ($type =~ /^application\// && $type !~ /^application\/pdf/) {
 			my $checksum = md5_hex($part->body);
 			$result = validate_checksum($checksum);
 			return $result if ($result > 0);
